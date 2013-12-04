@@ -7,9 +7,9 @@ import (
 var _ = fmt.Printf
 
 type Store interface {
-	Open()
-	Get(key string) sessiondata
-	Set(key string, data sessiondata, timeout int) error
+	Open(options string) (Store, error)
+	Get(key string) Sessiondata
+	Set(key string, data Sessiondata, timeout int) error
 	Delete(string)
 }
 
@@ -27,5 +27,10 @@ func Register(name string, store Store) {
 }
 
 func Open(name, options string) (Store, error) {
-	return nil, nil
+	s := stores[name]
+	if s == nil {
+		return nil, fmt.Errorf("session: No such session store type: %s", name)
+	}
+
+	return s.Open(options)
 }

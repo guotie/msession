@@ -97,6 +97,7 @@ func Sessions(name string, storetype string,
 		c.MapTo(s, (*Session)(nil))
 
 		c.Next()
+
 		if s.shouldsave {
 			check(s.Save(), l)
 		}
@@ -143,12 +144,12 @@ func SetSecure(s bool) {
 /*
  *---------------------------session implement----------------------------------
  */
-type sessiondata map[interface{}]interface{}
+type Sessiondata map[interface{}]interface{}
 
 type session struct {
 	key    string
 	cookie *http.Cookie
-	data   sessiondata
+	data   Sessiondata
 
 	// send set-cookie to browser
 	shouldsave bool
@@ -209,7 +210,7 @@ func (s *session) Create(age int, l *log.Logger) {
 	}
 
 	s.key = hex.EncodeToString(uuid[0:16])
-	s.data = make(sessiondata)
+	s.data = make(Sessiondata)
 	if age > 0 {
 		s.data[expiresTS] = time.Now().Add(maxDurtion)
 	} else {
