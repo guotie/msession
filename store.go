@@ -8,9 +8,9 @@ var _ = fmt.Printf
 
 type Store interface {
 	Open()
-	Get(key interface{}) *sessiondata
-	Set(key interface{}, data *sessiondata, timeout int) error
-	Delete(interface{})
+	Get(key string) sessiondata
+	Set(key string, data sessiondata, timeout int) error
+	Delete(string)
 }
 
 var stores = make(map[string]Store)
