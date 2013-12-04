@@ -36,10 +36,10 @@ type Session interface {
 	SetStore() error
 
 	// Save is to the client, usualy browsers
-	Save(r *http.Request) error
+	Save(res http.ResponseWriter)
 
 	// Clear cookie, by set cookie's expire to now
-	Clear(r *http.Request) error
+	Clear(res http.ResponseWriter)
 
 	// AddFlash adds a flash message to the session.
 	AddFlash(value interface{})
@@ -99,7 +99,7 @@ func Sessions(name string, storetype string,
 		c.Next()
 
 		if s.shouldsave {
-			check(s.Save(), l)
+			s.Save(res)
 		}
 		if s.shouldset {
 			check(s.SetStore(), l)
@@ -254,15 +254,34 @@ func (s *session) DelStore() {
 }
 
 // Save is to the client, usualy browsers
-func (s *session) Save() error {
+func (s *session) Save(res http.ResponseWriter) {
 	s.shouldsave = false
-	return nil
+	cookie := &http.Cookie{
+		Name:     sessionname,
+		Value:    Sign(s.key) + "-" + s.key,
+		Path:     "/",
+		HttpOnly: httpOnly,
+		Secure:   secure,
+		Expires:  s.data[expiresTS].(time.Time).UTC(),
+	}
+	http.SetCookie(res, cookie)
+	return
 }
 
 // clear this cookie, by set Expires to now
-func (s *session) Clear() error {
+func (s *session) Clear(res http.ResponseWriter) {
 	s.shouldsave = false
-	return nil
+
+	cookie := &http.Cookie{
+		Name:     sessionname,
+		Value:    Sign(s.key) + "-" + s.key,
+		Path:     "/",
+		HttpOnly: httpOnly,
+		Secure:   secure,
+		Expires:  time.Now().UTC(),
+	}
+	http.SetCookie(res, cookie)
+	return
 }
 
 /*
