@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	warnFormat  = "[sessions] WARN! %s\n"
-	errorFormat = "[sessions] ERROR! %s\n"
+	warnFormat  = "[sessions] WARN: %s\n"
+	errorFormat = "[sessions] ERROR: %s\n"
 )
 
 // Session stores the values and optional configuration for a session.
@@ -20,14 +20,11 @@ type Session interface {
 	// Init session by cookie name, fetch data
 	Init() bool
 
-	// Fini is called at the handler flow end, save or set, delete or clear
-	Fini()
-
 	// Get returns the session value associated to the given key.
 	Get(key interface{}) interface{}
 
 	// Create a new session ID with sessiondata
-	Create()
+	Create(age int, l *log.Logger)
 
 	// Set sets the session value associated to the given key.
 	SetKey(key interface{}, val interface{})
