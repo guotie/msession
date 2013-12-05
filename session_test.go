@@ -1,14 +1,11 @@
 package session
 
 import (
-	"fmt"
 	"github.com/codegangsta/martini"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
-
-var _ = fmt.Printf
 
 func Test_Session(t *testing.T) {
 	m := martini.Classic()
@@ -34,11 +31,11 @@ func Test_Session(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/testsession", nil)
 	m.ServeHTTP(res, req)
 
-	fmt.Println(res.Code)
+	println(res.Code)
 	for k, v := range res.HeaderMap {
-		fmt.Println(k, ": ", v)
+		print("%s: %s\n", k, v)
 	}
-	fmt.Println(res.Body.String(), "\n")
+	println(res.Body.String(), "\n")
 
 	res2 := httptest.NewRecorder()
 	req2, _ := http.NewRequest("GET", "/show", nil)
