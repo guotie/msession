@@ -2,6 +2,7 @@ package session
 
 import (
 	"encoding/hex"
+	"fmt"
 	"github.com/codegangsta/martini"
 	"github.com/streadway/simpleuuid"
 	"log"
@@ -9,6 +10,8 @@ import (
 	"strings"
 	"time"
 )
+
+var _ = fmt.Printf
 
 const (
 	warnFormat  = "[sessions] WARN: %s\n"
@@ -91,14 +94,18 @@ func Sessions(name string,
 		s.cookie, _ = r.Cookie(name)
 		c.MapTo(s, (*Session)(nil))
 
-		c.Next()
-
-		if s.shouldsave {
-			s.Save(res)
-		}
-		if s.shouldset {
-			check(s.SetStore(), l)
-		}
+		rw := res.(martini.ResponseWriter)
+		rw.Before(func(martini.ResponseWriter) {
+			fmt.Println(s)
+			if s.shouldset {
+				fmt.Printf("set session to store\n")
+				check(s.SetStore(), l)
+			}
+			if s.shouldsave {
+				fmt.Printf("save session to client\n")
+				s.Save(res)
+			}
+		})
 	}
 }
 
@@ -162,6 +169,9 @@ const (
 // Returns true if a Session pulled from signed cookie else false
 func (s *session) Init() bool {
 	cookie := s.cookie
+	if cookie == nil {
+		return false
+	}
 
 	// Separate the data from the signature.
 	hyphen := strings.Index(cookie.Value, "-")
@@ -305,10 +315,13 @@ func (s *session) SetShouldSet(ss bool) {
 */
 
 func (s *session) AddFlash(value interface{}) {
-	var flashes []interface{}
+	var flashes []interface{} = make([]interface{}, 0)
 
 	if v, ok := s.data[flashesKey]; ok {
 		flashes = v.([]interface{})
+	}
+	if s.data == nil {
+		s.Create(0, nil)
 	}
 	s.data[flashesKey] = append(flashes, value)
 }
