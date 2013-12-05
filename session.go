@@ -18,7 +18,7 @@ const (
 // Session stores the values and optional configuration for a session.
 type Session interface {
 	// Init session by cookie name, fetch data
-	Init()
+	Init() bool
 
 	// Fini is called at the handler flow end, save or set, delete or clear
 	Fini()
@@ -34,6 +34,12 @@ type Session interface {
 
 	// Set sessiondata back to store
 	SetStore() error
+
+	// Delete the key/value of session data
+	DelKey(key interface{})
+
+	// Delete the session data from store
+	DelStore()
 
 	// Save is to the client, usualy browsers
 	Save(res http.ResponseWriter)
@@ -63,8 +69,10 @@ var (
 // Sessions can use a number of storage solutions with the given store options.
 // store: memory, redis, memcache, etc
 // options: usally json string to open store
-func Sessions(name string, storetype string,
-	dsn string, secret string) martini.Handler {
+func Sessions(name string,
+	storetype string,
+	dsn string,
+	secret string) martini.Handler {
 	var err error
 
 	store, err = Open(storetype, dsn)
@@ -81,19 +89,9 @@ func Sessions(name string, storetype string,
 
 	return func(res http.ResponseWriter, r *http.Request, c martini.Context,
 		l *log.Logger) {
-		var (
-			s      *session
-			err    error
-			cookie *http.Cookie
-		)
-
-		s = &session{}
-		cookie, err = r.Cookie(name)
-		if err == nil {
-			s.cookie = cookie
-		}
-
 		// Map to the Session interface
+		s := &session{}
+		s.cookie, _ = r.Cookie(name)
 		c.MapTo(s, (*Session)(nil))
 
 		c.Next()
@@ -164,26 +162,26 @@ const (
 	expiresTS  = "_expires"
 )
 
-// Returns a Session pulled from signed cookie.
-func (s *session) Init() {
+// Returns true if a Session pulled from signed cookie else false
+func (s *session) Init() bool {
 	cookie := s.cookie
 
 	// Separate the data from the signature.
 	hyphen := strings.Index(cookie.Value, "-")
 	if hyphen == -1 || hyphen >= len(cookie.Value)-1 {
-		return
+		return false
 	}
 	sig, data := cookie.Value[:hyphen], cookie.Value[hyphen+1:]
 
 	// Verify the signature.
 	if !Verify(data, sig) {
-		return
+		return false
 	}
 
 	s.key = data
 	s.data = store.Get(data)
 
-	return
+	return true
 }
 
 // Get returns the session value associated to the given key.
