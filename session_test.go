@@ -8,38 +8,6 @@ import (
 	"time"
 )
 
-/*
-func Test_Session(t *testing.T) {
-	m := martini.Classic()
-
-	m.Use(Sessions("my_session", "memory", "", "secret123"))
-
-	m.Get("/testsession", func(res http.ResponseWriter, session Session) string {
-		session.Init()
-		session.SetKey("hello", "world")
-
-		return "OK"
-	})
-
-	m.Get("/show", func(session Session) string {
-		session.Init()
-		if session.Get("hello") != "world" {
-			t.Error("Session writing failed")
-		}
-		return "OK"
-	})
-
-	res := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/testsession", nil)
-	m.ServeHTTP(res, req)
-
-	res2 := httptest.NewRecorder()
-	req2, _ := http.NewRequest("GET", "/show", nil)
-	req2.Header.Set("Cookie", res.Header().Get("Set-Cookie"))
-	m.ServeHTTP(res2, req2)
-}
-*/
-
 func Test_SessionTO(t *testing.T) {
 	m := martini.Classic()
 
