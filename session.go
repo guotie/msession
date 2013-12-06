@@ -238,6 +238,7 @@ func (s *session) Create(age int, l *log.Logger) {
 
 	s.shouldset = true
 	s.shouldsave = true
+	s.status = true
 }
 
 // Set sets the session value associated to the given key.
@@ -259,7 +260,14 @@ func (s *session) SetKey(key interface{}, val interface{}) {
 // set session data back to store
 func (s *session) SetStore() error {
 	s.shouldset = false
-	return store.Set(s.key, s.data, maxAge)
+	if store.Memory() {
+		return store.Set(s.key, s.data, 0)
+	}
+
+	now := time.Now()
+	delta := s.data[expiresTS].(time.Time).Sub(now)
+	age := int(delta / time.Second)
+	return store.Set(s.key, s.data, age)
 }
 
 // Delete the key/value of session data
@@ -269,6 +277,7 @@ func (s *session) DelKey(key interface{}) {
 	}
 	if store.Memory() {
 		st := store.(memstore)
+
 		st.lock.Lock()
 		delete(s.data, key)
 		st.lock.Unlock()

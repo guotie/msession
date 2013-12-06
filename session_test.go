@@ -80,7 +80,7 @@ func Test_SessionTO(t *testing.T) {
 	req2.Header.Set("Cookie", res.Header().Get("Set-Cookie"))
 	m.ServeHTTP(res2, req2)
 
-	time.Sleep(time.Second * time.Duration(5))
+	time.Sleep(time.Second * time.Duration(6))
 
 	res3 := httptest.NewRecorder()
 	req3, _ := http.NewRequest("GET", "/show2", nil)
@@ -109,9 +109,12 @@ func Test_SessionRefresh(t *testing.T) {
 		return "OK"
 	})
 
-	m.Get("/show2", func(session Session) string {
-		session.Init()
-		if session.Get("hello") == "world" {
+	m.Get("/show2", func(sess Session) string {
+		sess.Init()
+		if sess.Get("hello") == "world" {
+			s := sess.(*session)
+			tm := (s.data[expiresTS]).(time.Time)
+			t.Error(tm)
 			t.Error("Session refresh timeout failed")
 		}
 		return "OK"
