@@ -152,6 +152,9 @@ type session struct {
 	cookie *http.Cookie
 	data   Sessiondata
 
+	// status of the session
+	// true: initialed, and get data successfully, otherwise false
+	status bool
 	// send set-cookie to browser
 	shouldsave bool
 	// set data back to store
@@ -186,12 +189,16 @@ func (s *session) Init() bool {
 
 	s.key = data
 	s.data = store.Get(data)
+	s.status = true
 
 	return true
 }
 
 // Get returns the session value associated to the given key.
 func (s *session) Get(key interface{}) interface{} {
+	if !s.status {
+		return nil
+	}
 	if s.data == nil {
 		return nil
 	}
@@ -235,7 +242,7 @@ func (s *session) Create(age int, l *log.Logger) {
 
 // Set sets the session value associated to the given key.
 func (s *session) SetKey(key interface{}, val interface{}) {
-	if s.data == nil {
+	if s.data == nil || !s.status {
 		s.Create(0, nil)
 	}
 	if store.Memory() {
