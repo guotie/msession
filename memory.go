@@ -44,9 +44,24 @@ func (ms memstore) Get(key string) Sessiondata {
 
 // for session interface SetStore
 func (ms memstore) Set(key string, data Sessiondata, timeout int) error {
-	ms.lock.Lock()
-	ms.store[key] = data
-	ms.lock.Unlock()
+	n := time.Now()
+	e := data[expiresTS].(time.Time)
+	if e.After(n) {
+		/*
+		 *	delete it from map when timeout
+		 */
+		tmr := time.AfterFunc(e.Sub(n), func() {
+			ms.lock.Lock()
+			delete(ms.store, key)
+			ms.lock.Unlock()
+		})
+		data["_tmr"] = tmr
+
+		ms.lock.Lock()
+		ms.store[key] = data
+		ms.lock.Unlock()
+	}
+
 	return nil
 }
 
@@ -55,4 +70,8 @@ func (ms memstore) Delete(key string) {
 	ms.lock.Lock()
 	delete(ms.store, key)
 	ms.lock.Unlock()
+}
+
+func (ms memstore) Memory() bool {
+	return true
 }

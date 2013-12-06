@@ -11,6 +11,12 @@ type Store interface {
 	Get(key string) Sessiondata
 	Set(key string, data Sessiondata, timeout int) error
 	Delete(string)
+
+	// For memory store, return true, otherwise false
+	// This is used by session to distinguaish memory store and others
+	// For memory store, we set/delete key direct from memory, so
+	// it is necessary to lock the memory mutex.
+	Memory() bool
 }
 
 var stores = make(map[string]Store)

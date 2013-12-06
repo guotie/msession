@@ -2,7 +2,6 @@ package session
 
 import (
 	"encoding/hex"
-	"fmt"
 	"github.com/codegangsta/martini"
 	"github.com/streadway/simpleuuid"
 	"log"
@@ -10,8 +9,6 @@ import (
 	"strings"
 	"time"
 )
-
-var _ = fmt.Printf
 
 const (
 	warnFormat  = "[sessions] WARN: %s\n"
@@ -44,6 +41,11 @@ type Session interface {
 	// Save is to the client, usualy browsers
 	Save(res http.ResponseWriter)
 
+	// Refresh session's expire time by add duration t
+	Refresh(t time.Duration)
+	// Refresh session's expire to time t
+	RefreshTO(t time.Time)
+
 	// Clear cookie, by set cookie's expire to now
 	Clear(res http.ResponseWriter)
 
@@ -58,8 +60,8 @@ var (
 	store       Store
 	sessionname string = "sid"
 	secretKey   []byte
-	maxAge      int = 30 * 86400
-	maxDurtion  time.Duration
+	maxAge      int           = 30 * 86400
+	maxDurtion  time.Duration = time.Duration(maxAge) * time.Second
 	httpOnly    bool
 	secure      bool
 )
@@ -96,13 +98,10 @@ func Sessions(name string,
 
 		rw := res.(martini.ResponseWriter)
 		rw.Before(func(martini.ResponseWriter) {
-			fmt.Println(s)
 			if s.shouldset {
-				fmt.Printf("set session to store\n")
 				check(s.SetStore(), l)
 			}
 			if s.shouldsave {
-				fmt.Printf("save session to client\n")
 				s.Save(res)
 			}
 		})
@@ -197,6 +196,14 @@ func (s *session) Get(key interface{}) interface{} {
 		return nil
 	}
 
+	if store.Memory() {
+		st := store.(memstore)
+		st.lock.RLock()
+		val := s.data[key]
+		st.lock.RUnlock()
+		return val
+	}
+
 	return s.data[key]
 }
 
@@ -217,11 +224,12 @@ func (s *session) Create(age int, l *log.Logger) {
 	s.key = hex.EncodeToString(uuid[0:16])
 	s.data = make(Sessiondata)
 	if age > 0 {
-		s.data[expiresTS] = time.Now().Add(maxDurtion)
-	} else {
 		s.data[expiresTS] = time.Now().Add(time.Duration(age) * time.Second)
+	} else {
+		s.data[expiresTS] = time.Now().Add(maxDurtion)
 	}
 
+	s.shouldset = true
 	s.shouldsave = true
 }
 
@@ -230,8 +238,15 @@ func (s *session) SetKey(key interface{}, val interface{}) {
 	if s.data == nil {
 		s.Create(0, nil)
 	}
-	s.data[key] = val
-	s.shouldset = true
+	if store.Memory() {
+		st := store.(memstore)
+		st.lock.Lock()
+		s.data[key] = val
+		st.lock.Unlock()
+	} else {
+		s.data[key] = val
+		s.shouldset = true
+	}
 }
 
 // set session data back to store
@@ -245,8 +260,15 @@ func (s *session) DelKey(key interface{}) {
 	if s.data == nil {
 		return
 	}
-	delete(s.data, key)
-	s.shouldset = true
+	if store.Memory() {
+		st := store.(memstore)
+		st.lock.Lock()
+		delete(s.data, key)
+		st.lock.Unlock()
+	} else {
+		delete(s.data, key)
+		s.shouldset = true
+	}
 }
 
 // Delete the session data from store
@@ -275,6 +297,7 @@ func (s *session) Save(res http.ResponseWriter) {
 
 // clear this cookie, by set Expires to now
 func (s *session) Clear(res http.ResponseWriter) {
+	s.DelStore()
 	s.shouldsave = false
 
 	cookie := &http.Cookie{
@@ -287,6 +310,35 @@ func (s *session) Clear(res http.ResponseWriter) {
 	}
 	http.SetCookie(res, cookie)
 	return
+}
+
+// Refresh session's expire time by add duration t
+// param t is duration
+func (s *session) Refresh(t time.Duration) {
+	v := s.data[expiresTS].(time.Time).Add(t)
+	n := time.Now()
+
+	if store.Memory() {
+		st := store.(memstore)
+		st.lock.Lock()
+		s.data[expiresTS] = v
+		tmr := s.data["_tmr"].(*time.Timer)
+		if v.After(n) {
+			tmr.Reset(v.Sub(time.Now()))
+		}
+		st.lock.Unlock()
+	} else {
+		s.data[expiresTS] = v
+		s.shouldset = true
+	}
+	s.shouldsave = true
+}
+
+// Refresh session's expire to time t
+// param t is absolute time
+func (s *session) RefreshTO(t time.Time) {
+	t1 := s.data[expiresTS].(time.Time)
+	s.Refresh(t.Sub(t1))
 }
 
 /*
@@ -324,6 +376,7 @@ func (s *session) AddFlash(value interface{}) {
 		s.Create(0, nil)
 	}
 	s.data[flashesKey] = append(flashes, value)
+	s.shouldset = true
 }
 
 func (s *session) Flashes() []interface{} {
@@ -333,6 +386,7 @@ func (s *session) Flashes() []interface{} {
 		// Drop the flashes and return it.
 		delete(s.data, flashesKey)
 		flashes = v.([]interface{})
+		s.shouldset = true
 	}
 
 	return flashes
