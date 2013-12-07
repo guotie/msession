@@ -12,7 +12,7 @@ type redisstore struct {
 }
 
 const (
-	defaultAddr     = "localhost:9368"
+	defaultAddr     = "localhost:6379"
 	defaultNetwork  = "tcp"
 	defaultPoolSize = 10
 )
@@ -41,7 +41,7 @@ func createPool(options string) *redis.Pool {
 
 	err := json.Unmarshal([]byte(options), &config)
 	if err != nil {
-		println("unmarshal", options, "failed:", err)
+		//println("unmarshal failed:", err.Error())
 		config.Addr = defaultAddr
 		config.Network = defaultNetwork
 		config.Pools = defaultPoolSize

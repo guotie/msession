@@ -1,6 +1,57 @@
 package session
 
 import (
+	"encoding/gob"
+	//"github.com/garyburd/redigo/redis"
+	"bytes"
+	"testing"
+	"time"
+)
+
+type TM map[interface{}]interface{}
+
+func enc(m TM) ([]byte, error) {
+	buf := new(bytes.Buffer)
+	encd := gob.NewEncoder(buf)
+	if err := encd.Encode(m); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func dec(buf []byte, dst TM) error {
+	decd := gob.NewDecoder(bytes.NewBuffer(buf))
+	if err := decd.Decode(dst); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func Test_Conn(t *testing.T) {
+	pool := createPool("")
+	conn := pool.Get()
+	m := TM{"str": "abcdefg",
+		1:         100,
+		true:      "true",
+		"false":   false,
+		"expires": time.Now(),
+	}
+
+	buf, err := enc(m)
+	if err != nil {
+		panic(err)
+	}
+	_, err = conn.Do("SET", "id1", buf)
+	if err != nil {
+		t.Error("set map failed!")
+	} else {
+		println("redis set success.")
+	}
+}
+
+/*
+import (
 	"github.com/codegangsta/martini"
 	"net/http"
 	"net/http/httptest"
@@ -8,7 +59,7 @@ import (
 	"time"
 )
 
-func Test_SessionTO(t *testing.T) {
+func Test_RedisSessionTO(t *testing.T) {
 	m := martini.Classic()
 
 	m.Use(Sessions("my_session", "redis", "", "secret123"))
@@ -56,7 +107,7 @@ func Test_SessionTO(t *testing.T) {
 	m.ServeHTTP(res3, req3)
 }
 
-func Test_SessionRefresh(t *testing.T) {
+func Test_RedisSessionRefresh(t *testing.T) {
 	m := martini.Classic()
 
 	m.Use(Sessions("sid", "redis", "", "secret123"))
@@ -126,7 +177,7 @@ func Test_SessionRefresh(t *testing.T) {
 	m.ServeHTTP(res5, req5)
 }
 
-func Test_SessionClear(t *testing.T) {
+func Test_RedisSessionClear(t *testing.T) {
 	m := martini.Classic()
 
 	m.Use(Sessions("sid", "redis", "", "secret123"))
@@ -199,7 +250,7 @@ func Test_SessionClear(t *testing.T) {
 	m.ServeHTTP(res5, req5)
 }
 
-func Test_Flashes(t *testing.T) {
+func Test_RedisFlashes(t *testing.T) {
 	m := martini.Classic()
 
 	m.Use(Sessions("sid", "redis", "", "secret123"))
@@ -242,3 +293,4 @@ func Test_Flashes(t *testing.T) {
 	req3.Header.Set("Cookie", res.Header().Get("Set-Cookie"))
 	m.ServeHTTP(res3, req3)
 }
+*/
