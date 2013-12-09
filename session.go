@@ -62,7 +62,7 @@ var (
 	secretKey   []byte
 	maxAge      int           = 30 * 86400
 	maxDurtion  time.Duration = time.Duration(maxAge) * time.Second
-	httpOnly    bool
+	httpOnly    bool = true
 	secure      bool
 )
 
