@@ -1,5 +1,6 @@
 package session
 
+/*
 import (
 	"github.com/codegangsta/martini"
 	"net/http"
@@ -242,3 +243,4 @@ func Test_Flashes(t *testing.T) {
 	req3.Header.Set("Cookie", res.Header().Get("Set-Cookie"))
 	m.ServeHTTP(res3, req3)
 }
+*/
