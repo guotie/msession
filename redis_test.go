@@ -1,5 +1,6 @@
 package session
 
+/*
 import (
 	"encoding/gob"
 	//"github.com/garyburd/redigo/redis"
@@ -9,6 +10,17 @@ import (
 )
 
 type TM map[interface{}]interface{}
+type User struct {
+	Name   string
+	Gender int
+	Ages   int
+	Birth  time.Time
+	Attrs  []byte
+}
+
+func init() {
+	gob.Register(User{})
+}
 
 func enc(m TM) ([]byte, error) {
 	buf := new(bytes.Buffer)
@@ -19,7 +31,7 @@ func enc(m TM) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func dec(buf []byte, dst TM) error {
+func dec(buf []byte, dst *TM) error {
 	decd := gob.NewDecoder(bytes.NewBuffer(buf))
 	if err := decd.Decode(dst); err != nil {
 		return err
@@ -31,13 +43,16 @@ func dec(buf []byte, dst TM) error {
 func Test_Conn(t *testing.T) {
 	pool := createPool("")
 	conn := pool.Get()
+	gob.Register(time.Time{})
 	m := TM{"str": "abcdefg",
 		1:         100,
 		true:      "true",
 		"false":   false,
 		"expires": time.Now(),
+		"user":    User{"guotie", 1, 34, time.Now(), []byte("hello, world")},
 	}
 
+	println(m["expires"].(time.Time).String())
 	buf, err := enc(m)
 	if err != nil {
 		panic(err)
@@ -48,9 +63,28 @@ func Test_Conn(t *testing.T) {
 	} else {
 		println("redis set success.")
 	}
+
+	var res interface{}
+	res, err = conn.Do("get", "id1")
+	if err != nil {
+		t.Error("get map failed")
+	}
+	dst := TM{}
+	err = dec(res.([]byte), &dst)
+	if err != nil {
+		t.Error("decode map failed!")
+	}
+
+	u := dst["user"].(User)
+	println(dst["str"].(string))
+	println(dst[1].(int))
+	println(dst[true].(string))
+	println(dst["false"].(bool))
+	println(dst["expires"].(time.Time).String())
+	println(u.Name, u.Ages, string(u.Attrs))
 }
 
-/*
+*/
 import (
 	"github.com/codegangsta/martini"
 	"net/http"
@@ -263,9 +297,14 @@ func Test_RedisFlashes(t *testing.T) {
 
 	m.Get("/show", func(session Session) string {
 		session.Init()
-		l := len(session.Flashes())
+		f := session.Flashes()
+		l := len(f)
 		if l != 1 {
 			t.Error("Flashes count does not equal 1. Equals ", l)
+		}
+		for _, e := range f {
+			ss := e.(string)
+			println(ss)
 		}
 		return "OK"
 	})
@@ -293,4 +332,3 @@ func Test_RedisFlashes(t *testing.T) {
 	req3.Header.Set("Cookie", res.Header().Get("Set-Cookie"))
 	m.ServeHTTP(res3, req3)
 }
-*/

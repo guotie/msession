@@ -1,7 +1,10 @@
 package session
 
 import (
+	"bytes"
+	"encoding/gob"
 	"encoding/json"
+	"fmt"
 	"github.com/garyburd/redigo/redis"
 	"time"
 )
@@ -17,10 +20,10 @@ const (
 	defaultPoolSize = 10
 )
 
-var ()
-
 func init() {
 	Register("redis", redisstore{})
+	gob.Register(time.Time{})
+	gob.Register([]interface{}{})
 }
 
 // options sample:
@@ -87,15 +90,31 @@ func (rs redisstore) Open(options string) (Store, error) {
 // for session interface Get
 func (rs redisstore) Get(key string) Sessiondata {
 	val, ok := rs.pool.Get().Do("GET", key)
-	if ok != nil {
-		return nil
+	if ok != nil || val == nil {
+		return Sessiondata{}
 	}
-	return val.(Sessiondata)
+	data, err := deserialize(val.([]byte))
+	if err != nil {
+		fmt.Printf("redis GET failed: deserialize: %s\n", err.Error())
+	}
+	return data
 }
 
 // for session interface SetStore
 func (rs redisstore) Set(key string, data Sessiondata, timeout int) error {
+	if timeout <= 0 {
+		return fmt.Errorf("timeout invalid: %d", timeout)
+	}
+	buf, err := serialize(data)
+	if err != nil {
+		println(err.Error())
+		return err
+	}
 
+	_, err = rs.pool.Get().Do("SETEX", key, timeout, buf)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -106,4 +125,22 @@ func (rs redisstore) Delete(key string) {
 
 func (rs redisstore) Memory() bool {
 	return false
+}
+
+func serialize(data Sessiondata) ([]byte, error) {
+	buf := new(bytes.Buffer)
+	enc := gob.NewEncoder(buf)
+	if err := enc.Encode(data); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func deserialize(src []byte) (Sessiondata, error) {
+	dst := make(Sessiondata)
+	dec := gob.NewDecoder(bytes.NewBuffer(src))
+	if err := dec.Decode(&dst); err != nil {
+		return dst, err
+	}
+	return dst, nil
 }
