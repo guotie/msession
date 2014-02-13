@@ -1,90 +1,5 @@
 package session
 
-/*
-import (
-	"encoding/gob"
-	//"github.com/garyburd/redigo/redis"
-	"bytes"
-	"testing"
-	"time"
-)
-
-type TM map[interface{}]interface{}
-type User struct {
-	Name   string
-	Gender int
-	Ages   int
-	Birth  time.Time
-	Attrs  []byte
-}
-
-func init() {
-	gob.Register(User{})
-}
-
-func enc(m TM) ([]byte, error) {
-	buf := new(bytes.Buffer)
-	encd := gob.NewEncoder(buf)
-	if err := encd.Encode(m); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
-func dec(buf []byte, dst *TM) error {
-	decd := gob.NewDecoder(bytes.NewBuffer(buf))
-	if err := decd.Decode(dst); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func Test_Conn(t *testing.T) {
-	pool := createPool("")
-	conn := pool.Get()
-	gob.Register(time.Time{})
-	m := TM{"str": "abcdefg",
-		1:         100,
-		true:      "true",
-		"false":   false,
-		"expires": time.Now(),
-		"user":    User{"guotie", 1, 34, time.Now(), []byte("hello, world")},
-	}
-
-	println(m["expires"].(time.Time).String())
-	buf, err := enc(m)
-	if err != nil {
-		panic(err)
-	}
-	_, err = conn.Do("SET", "id1", buf)
-	if err != nil {
-		t.Error("set map failed!")
-	} else {
-		println("redis set success.")
-	}
-
-	var res interface{}
-	res, err = conn.Do("get", "id1")
-	if err != nil {
-		t.Error("get map failed")
-	}
-	dst := TM{}
-	err = dec(res.([]byte), &dst)
-	if err != nil {
-		t.Error("decode map failed!")
-	}
-
-	u := dst["user"].(User)
-	println(dst["str"].(string))
-	println(dst[1].(int))
-	println(dst[true].(string))
-	println(dst["false"].(bool))
-	println(dst["expires"].(time.Time).String())
-	println(u.Name, u.Ages, string(u.Attrs))
-}
-
-*/
 import (
 	"github.com/codegangsta/martini"
 	"net/http"
@@ -302,10 +217,12 @@ func Test_RedisFlashes(t *testing.T) {
 		if l != 1 {
 			t.Error("Flashes count does not equal 1. Equals ", l)
 		}
-		for _, e := range f {
-			ss := e.(string)
-			println(ss)
-		}
+		/*
+			for _, e := range f {
+				ss := e.(string)
+				println(ss)
+			}
+		*/
 		return "OK"
 	})
 

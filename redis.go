@@ -89,29 +89,33 @@ func (rs redisstore) Open(options string) (Store, error) {
 
 // for session interface Get
 func (rs redisstore) Get(key string) Sessiondata {
-	val, ok := rs.pool.Get().Do("GET", key)
+	val, ok := rs.pool.Get().Do("HGET", "sessions", key)
 	if ok != nil || val == nil {
-		return Sessiondata{}
+		return nil
 	}
 	data, err := deserialize(val.([]byte))
 	if err != nil {
 		fmt.Printf("redis GET failed: deserialize: %s\n", err.Error())
 	}
+	exp := data[expiresTS].(time.Time)
+	n := time.Now()
+	if n.After(exp) {
+		rs.pool.Get().Do("HDEL", "sessions", key)
+		return nil
+	}
+
 	return data
 }
 
 // for session interface SetStore
 func (rs redisstore) Set(key string, data Sessiondata, timeout int) error {
-	if timeout <= 0 {
-		return fmt.Errorf("timeout invalid: %d", timeout)
-	}
 	buf, err := serialize(data)
 	if err != nil {
 		println(err.Error())
 		return err
 	}
 
-	_, err = rs.pool.Get().Do("SETEX", key, timeout, buf)
+	_, err = rs.pool.Get().Do("HSET", "sessions", key, buf)
 	if err != nil {
 		return err
 	}
@@ -120,7 +124,7 @@ func (rs redisstore) Set(key string, data Sessiondata, timeout int) error {
 
 // for session interface DelStore
 func (rs redisstore) Delete(key string) {
-	rs.pool.Get().Do("DELETE", key)
+	rs.pool.Get().Do("HDEL", "sessions", key)
 }
 
 func (rs redisstore) Memory() bool {
