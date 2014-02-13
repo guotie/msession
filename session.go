@@ -357,31 +357,6 @@ func (s *session) RefreshTO(t time.Time) {
 	s.Refresh(t.Sub(t1))
 }
 
-/*
-// return should save
-func (s *session) ShouldSave() bool {
-	return s.shouldsave
-}
-
-// set should save
-// if shouldsave is true, the handler should add set-cookie to request header to
-// set this cookie
-func (s *session) SetShouldSave(ss bool) {
-	s.shouldsave = ss
-}
-
-// return shouldset
-func (s *session) ShouldSet() bool {
-	return s.shouldset
-}
-
-// if shouldset is true, when the request is finished, the session data is set
-// back to store
-func (s *session) SetShouldSet(ss bool) {
-	s.shouldset = ss
-}
-*/
-
 func (s *session) AddFlash(value interface{}) {
 	var flashes []interface{} = make([]interface{}, 0)
 
