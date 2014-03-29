@@ -50,8 +50,14 @@ func createPool(options string) *redis.Pool {
 		config.Pools = defaultPoolSize
 	}
 
-	if config.Pools < 0 {
+	if config.Pools <= 0 {
 		config.Pools = defaultPoolSize
+	}
+	if config.Addr == "" {
+		config.Addr = defaultAddr
+	}
+	if config.Network == "" {
+		config.Network = "tcp"
 	}
 
 	pool := &redis.Pool{
