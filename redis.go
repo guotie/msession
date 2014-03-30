@@ -85,6 +85,12 @@ func createPool(options string) *redis.Pool {
 		},
 	}
 
+	conn := pool.Get()
+	if _, err := conn.Do("PING"); err != nil {
+		panic(err.Error())
+	}
+	defer conn.Close()
+
 	return pool
 }
 
