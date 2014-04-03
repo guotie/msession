@@ -2,7 +2,7 @@ package session
 
 import (
 	"encoding/hex"
-	"github.com/codegangsta/martini"
+	"github.com/go-martini/martini"
 	"github.com/streadway/simpleuuid"
 	"log"
 	"net/http"
