@@ -2,9 +2,7 @@ package session
 
 import (
 	"encoding/hex"
-	"fmt"
-	"github.com/go-martini/martini"
-	"github.com/streadway/simpleuuid"
+	"github.com/go-martini/martini"	"github.com/streadway/simpleuuid"
 	"log"
 	"net/http"
 	"strings"
@@ -58,7 +56,6 @@ type Session interface {
 }
 
 var (
-	_           = fmt.Printf
 	store       Store
 	sessionname string = "sid"
 	secretKey   []byte
