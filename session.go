@@ -3,7 +3,7 @@ package session
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/codegangsta/martini"
+	"github.com/go-martini/martini"
 	"github.com/streadway/simpleuuid"
 	"log"
 	"net/http"
@@ -62,7 +62,7 @@ var (
 	store       Store
 	sessionname string = "sid"
 	secretKey   []byte
-	maxAge      int           = 30 * 86400
+	maxAge      int           = 365 * 86400
 	maxDurtion  time.Duration = time.Duration(maxAge) * time.Second
 	httpOnly    bool          = true
 	secure      bool
