@@ -33,13 +33,13 @@ type Session interface {
 	SetKey(key interface{}, val interface{})
 
 	// Set sessiondata back to store
-	SetStore() error
+	//setStore() error
 
 	// Delete the key/value of session data
 	DelKey(key interface{})
 
 	// Delete the session data from store
-	DelStore()
+	//delStore()
 
 	// Save is to the client, usualy browsers
 	Save(res http.ResponseWriter)
@@ -102,7 +102,7 @@ func Sessions(name string,
 		rw := res.(martini.ResponseWriter)
 		rw.Before(func(martini.ResponseWriter) {
 			if s.shouldset {
-				check(s.SetStore(), l)
+				check(s.setStore(), l)
 			}
 			if s.shouldsave {
 				s.Save(res)
@@ -265,7 +265,7 @@ func (s *session) SetKey(key interface{}, val interface{}) {
 }
 
 // set session data back to store
-func (s *session) SetStore() error {
+func (s *session) setStore() error {
 	s.shouldset = false
 	if store.Memory() {
 		return store.Set(s.key, s.data, 0)
@@ -295,7 +295,7 @@ func (s *session) DelKey(key interface{}) {
 }
 
 // Delete the session data from store
-func (s *session) DelStore() {
+func (s *session) delStore() {
 	if s.data != nil {
 		s.data = nil
 		store.Delete(s.key)
@@ -320,7 +320,7 @@ func (s *session) Save(res http.ResponseWriter) {
 
 // clear this cookie, by set Expires to now
 func (s *session) Clear(res http.ResponseWriter) {
-	s.DelStore()
+	s.delStore()
 	s.shouldsave = false
 
 	cookie := &http.Cookie{
