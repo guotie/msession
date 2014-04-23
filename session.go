@@ -17,6 +17,9 @@ const (
 
 // Session stores the values and optional configuration for a session.
 type Session interface {
+	// signed cookie value
+	CookieValue() string
+
 	// Init session by cookie name, fetch data
 	Init() bool
 
@@ -167,6 +170,10 @@ const (
 	flashesKey = "_flash"
 	expiresTS  = "_expires"
 )
+
+func (s *session) CookieValue() string {
+	return Sign(s.key) + "-" + s.key
+}
 
 // Returns true if a Session pulled from signed cookie else false
 func (s *session) Init() bool {
