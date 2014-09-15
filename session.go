@@ -2,6 +2,7 @@ package session
 
 import (
 	"encoding/hex"
+	"fmt"
 	"github.com/go-martini/martini"
 	"github.com/streadway/simpleuuid"
 	"log"
@@ -109,6 +110,32 @@ func Sessions(name string,
 			}
 		})
 	}
+}
+
+// session for goji framework
+func CreateSession(name, storetype, dsn, secret string) (err error) {
+	store, err = Open(storetype, dsn)
+	if err != nil {
+		return err
+	}
+
+	if name != "" {
+		sessionname = name
+	}
+	if secret == "" {
+		return fmt.Errorf("secret Should NOT be empty.")
+	}
+
+	secretKey = []byte(secret)
+
+	return nil
+}
+
+func NewSession(r *http.Request) Session {
+	var s session = session{}
+	s.cookie, _ = r.Cookie(sessionname)
+
+	return &s
 }
 
 func check(err error, l *log.Logger) {
